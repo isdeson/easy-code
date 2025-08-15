@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" href="favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>批量二维码生成器</title>
   <!-- 引入React和ReactDOM -->
@@ -148,10 +149,51 @@
       height: 100%;
     }
 
+    .app {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      background-color: white;
+      padding: 16px 60px;
+      border-bottom: 1px solid var(--neutral-200);
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dark .app-header {
+      background-color: var(--neutral-800);
+      border-bottom-color: var(--neutral-700);
+    }
+
+    .app-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-header-left-logo {
+      height: 32px;
+    }
+
+    .app-header-left-logo img {
+      width: 100%;
+      height: 100%;
+    }
+
+    .app-name {
+      font-size: 24px;
+    }
+
     .app-container {
       display: flex;
       height: 100%;
       overflow: hidden;
+      flex: 1;
     }
 
     .left-panel {
@@ -178,6 +220,10 @@
 
     .dark .right-panel {
       background-color: var(--neutral-900);
+    }
+
+    .left-panel-header {
+      padding-top: 20px;
     }
 
     .header {
@@ -414,7 +460,7 @@
     .card-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
     }
 
     .card-title {
@@ -434,10 +480,49 @@
       color: var(--neutral-100);
     }
 
+    .card-title-text {
+      font-weight: 600;
+      color: var(--neutral-800);
+      cursor: pointer;
+      padding: 4px 0;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      background: transparent;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+    }
+
+    .dark .card-title-text {
+      color: var(--neutral-100);
+    }
+
+    .card-title-input {
+      font-weight: 600;
+      color: var(--neutral-800);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--primary);
+      background: white;
+      font-size: inherit;
+      font-family: inherit;
+      outline: none;
+      word-break: break-all;
+      width: 100%;
+    }
+
+    .dark .card-title-input {
+      color: var(--neutral-100);
+      background: var(--neutral-700);
+      border-color: var(--primary);
+    }
+
     .card-actions {
       display: flex;
       gap: 8px;
       align-items: center;
+      margin-left: 20px;
     }
 
     .card-content {
@@ -451,13 +536,8 @@
     }
 
     .card-content.expanded {
-      max-height: 400px;
       opacity: 1;
       padding-top: 20px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
     }
 
     .form-group:last-child {
@@ -611,9 +691,8 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
-      margin-top: 6px;
       font-weight: normal;
-      margin-bottom: 10px;
+      line-height: 1;
     }
 
     .dark .qr-time {
@@ -885,6 +964,14 @@
     .break-all {
       word-break: break-all;
     }
+
+    .overflow-ellipsis-line-1 {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
   </style>
 </head>
 
@@ -970,10 +1057,11 @@
         message: "",
         type: "success",
       });
-      const [deleteConfirm, setDeleteConfirm] = React.useState({ 
-        show: false, 
-        qrCode: null 
+      const [deleteConfirm, setDeleteConfirm] = React.useState({
+        show: false,
+        qrCode: null
       });
+      const [editingTitle, setEditingTitle] = React.useState(null); // 正在编辑标题的卡片ID
 
       // 自动保存到localStorage
       React.useEffect(() => {
@@ -1017,6 +1105,25 @@
       // 切换主题
       const toggleTheme = () => {
         setIsDarkMode(prev => !prev);
+      };
+
+      // 开始编辑标题
+      const startEditingTitle = (id, e) => {
+        e.stopPropagation();
+        setEditingTitle(id);
+      };
+
+      // 完成编辑标题
+      const finishEditingTitle = () => {
+        setEditingTitle(null);
+      };
+
+      // 处理标题键盘事件
+      const handleTitleKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+          e.preventDefault();
+          finishEditingTitle();
+        }
       };
 
       // 自动调整textarea高度的工具函数
@@ -1175,6 +1282,16 @@
       React.useEffect(() => {
         adjustAllTextareas();
       }, [filteredQrCodes, collapsedCards]);
+
+      // 当开始编辑标题时，自动选中输入框文本
+      React.useEffect(() => {
+        if (editingTitle) {
+          const input = document.querySelector('.card-title-input');
+          if (input) {
+            input.select();
+          }
+        }
+      }, [editingTitle]);
 
       // 刷新二维码预览
       const refreshQrCode = (id) => {
@@ -1375,433 +1492,442 @@
       }, [enlargedQrCode, qrCodes]);
 
       return (
-        <div className="app-container">
-          {/* 左侧配置面板 */}
-          <div className="left-panel">
-            <div className="header">
-              <div className="header-content">
-                <h2 className="header-title">
-                  二维码配置
-                </h2>
-                <div className="header-actions">
+        <div class="app">
+          <div class="app-header">
+            <div class="app-header-left">
+              <div class="app-header-left-logo">
+                <img src="logo.png" alt="logo" />
+              </div>
+              <div class="app-name"></div>
+            </div>
+            <div class="app-header-right">
+              <div class="app-header-right-theme">
+                <button
+                  className="btn btn-icon"
+                  onClick={toggleTheme}
+                  title={isDarkMode ? "切换到浅色模式" : "切换到深色模式"}
+                >
+                  <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="app-container">
+            {/* 左侧配置面板 */}
+            <div className="left-panel">
+              <div className="header left-panel-header">
+                {/* 搜索框 */}
+                <div className="search-container">
+                  <div className="search-container-main">
+                    <div className="search-container-main-inputer">
+                      <div className="search-icon">
+                        <i className="fas fa-search"></i>
+                      </div>
+                      <input
+                        type="text"
+                        className="search-input"
+                        placeholder="搜索配置名称或网址"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      {searchTerm && (
+                        <button
+                          className="search-clear"
+                          onClick={() => setSearchTerm("")}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      className="btn btn-primary btn-add-qr-code"
+                      onClick={addQrCode}
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                  </div>
 
+                  {searchTerm && (
+                    <div className="search-result">
+                      找到 {filteredQrCodes.length} 个匹配的配置
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* 搜索框 */}
-              <div className="search-container">
-                <div className="search-container-main">
-                  <div className="search-container-main-inputer">
-                    <div className="search-icon">
+              <div className="content-area">
+                {filteredQrCodes.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">
                       <i className="fas fa-search"></i>
                     </div>
-                    <input
-                      type="text"
-                      className="search-input"
-                      placeholder="搜索配置名称或网址"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                      <button
-                        className="search-clear"
-                        onClick={() => setSearchTerm("")}
+                    <h3 className="empty-title">
+                      {searchTerm ? "未找到匹配的配置" : "暂无配置"}
+                    </h3>
+                    <p>
+                      {searchTerm ? "请尝试其他搜索关键词" : "点击“+”添加新的二维码配置"}
+                    </p>
+                  </div>
+                ) : (
+                  filteredQrCodes.map((qr) => {
+                    const isCollapsed = collapsedCards.has(qr.id);
+                    return (
+                      <div
+                        key={qr.id}
+                        className={`card ${selectedId === qr.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedId(qr.id)}
                       >
-                        <i className="fas fa-times"></i>
+                        <div className="card-header">
+                          <div className="card-title">
+                            {editingTitle === qr.id ? (
+                              <input
+                                type="text"
+                                className="card-title-input"
+                                value={qr.name || ""}
+                                onChange={(e) => {
+                                  updateQrCode(qr.id, { name: e.target.value });
+                                }}
+                                onBlur={finishEditingTitle}
+                                onKeyDown={handleTitleKeyDown}
+                                autoFocus
+                                placeholder="输入配置名称"
+                              />
+                            ) : (
+                              <div
+                                className="card-title-text"
+                                onClick={(e) => startEditingTitle(qr.id, e)}
+                                title="点击编辑名称"
+                              >
+                                {qr.name || "未命名配置"}
+                              </div>
+                            )}
+                            <div className="qr-time">
+                              <i className="fas fa-clock"></i>
+                              <span>{formatTime(qr.updatedAt)}更新</span>
+                            </div>
+                          </div>
+                          <div className="card-actions">
+                            <button
+                              className="btn btn-round"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // 复制链接而不是二维码图片
+                                navigator.clipboard.writeText(qr.url).then(() => {
+                                  showNotification(`已复制链接: ${qr.name}`);
+                                }).catch(() => {
+                                  showNotification("复制失败，请重试", "error");
+                                });
+                              }}
+                              title="复制链接"
+                            >
+                              <i className="fas fa-link"></i>
+                            </button>
+                            <button
+                              className="btn btn-round"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showDeleteConfirm(qr);
+                              }}
+                              title="删除"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                            <button
+                              className="btn btn-round"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleCardCollapse(qr.id);
+                              }}
+                              title={isCollapsed ? "展开配置" : "折叠配置"}
+                            >
+                              <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}`}></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={`card-content ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+                          <div>
+                            <div className="form-group">
+                              <textarea
+                                className="form-input form-textarea"
+                                value={qr.url}
+                                onChange={(e) => {
+                                  updateQrCode(qr.id, { url: e.target.value });
+                                  // 自动调整高度
+                                  adjustTextareaHeight(e.target);
+                                }}
+                                onInput={(e) => {
+                                  // 自动调整高度
+                                  adjustTextareaHeight(e.target);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                placeholder="输入网址或文本内容"
+                                style={{ minHeight: '40px' }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* 右侧预览面板 */}
+            <div className="right-panel">
+              <div className="header">
+                <div className="header-content">
+                  <h2 className="header-title">
+                    二维码预览
+                  </h2>
+                  <div className="header-actions">
+                    {viewMode === "all" && (
+                      <button
+                        className="btn btn-icon"
+                        onClick={() => refreshQrCode()}
+                        title="刷新所有二维码"
+                      >
+                        <i className="fas fa-sync-alt"></i>
                       </button>
                     )}
-                  </div>
-                  <button
-                    className="btn btn-primary btn-add-qr-code"
-                    onClick={addQrCode}
-                  >
-                    <i className="fas fa-plus"></i>
-                  </button>
-                </div>
 
-                {searchTerm && (
-                  <div className="search-result">
-                    找到 {filteredQrCodes.length} 个匹配的配置
+                    <button
+                      className="btn btn-view-mode"
+                      onClick={() =>
+                        setViewMode(viewMode === "single" ? "all" : "single")
+                      }
+                      title={viewMode === "single" ? "多码预览" : "单码预览"}
+                    >
+                      {viewMode === "single" ? "多码预览" : "单码预览"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="preview-container">
+                {qrCodes.length === 0 ? (
+                  <div className="empty-state" style={{ height: '100%' }}>
+                    <div className="empty-icon">
+                      <i className="fas fa-qrcode"></i>
+                    </div>
+                    <h3 className="empty-title">暂无二维码配置</h3>
+                    <p>
+                      请在左侧面板点击"+"按钮开始创建
+                    </p>
+                  </div>
+                ) : viewMode === "single" && selectedQrCode ? (
+                  <div className="preview-single">
+                    <div className="flex justify-center mb-6">
+                      <canvas
+                        id="main-qr-canvas"
+                        width="350"
+                        height="350"
+                        className="qr-canvas"
+                        onClick={() => openQrCodeModal(selectedQrCode)}
+                        title="点击放大查看"
+                      ></canvas>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold mb-2 break-all" style={{ color: 'var(--neutral-800)' }}>
+                        {selectedQrCode.name}
+                      </div>
+                      <div className="qr-url mb-2">
+                        {selectedQrCode.url}
+                      </div>
+                      <div className="qr-time mb-6">
+                        <i className="fas fa-clock"></i>
+                        <span>{formatTime(selectedQrCode.updatedAt)}更新</span>
+                      </div>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => refreshQrCode(selectedQrCode.id)}
+                          style={{ padding: '12px 24px', borderRadius: '50px' }}
+                        >
+                          <i className="fas fa-sync-alt"></i>
+                        </button>
+                        <button
+                          className="btn btn-info"
+                          onClick={() => copyQrCode(selectedQrCode.id)}
+                          style={{ padding: '12px 24px', borderRadius: '50px' }}
+                        >
+                          <i className="fas fa-copy"></i>
+                        </button>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => downloadQrCode(selectedQrCode.id)}
+                          style={{ padding: '12px 24px', borderRadius: '50px' }}
+                        >
+                          <i className="fas fa-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="preview-grid">
+                    {qrCodes.map((qr) => (
+                      <div
+                        key={qr.id}
+                        className="preview-card"
+                      >
+                        <div className="flex justify-center" style={{ marginBottom: '16px' }}>
+                          <canvas
+                            id={`qr-canvas-${qr.id}`}
+                            width="250"
+                            height="250"
+                            className="qr-canvas"
+                            onClick={() => openQrCodeModal(qr)}
+                            title="点击放大查看"
+                          ></canvas>
+                        </div>
+                        <div className="qr-name overflow-ellipsis-line-1">
+                          {qr.name}
+                        </div>
+                        <div className="qr-time" style={{ margin: '10px' }}>
+                          <i className="fas fa-clock"></i>
+                          <span>{formatTime(qr.updatedAt)}</span>
+                        </div>
+                        <div className="qr-actions">
+                          <button
+                            className="btn btn-secondary btn-round"
+                            onClick={() => refreshQrCode(qr.id)}
+                            title="刷新二维码"
+                          >
+                            <i className="fas fa-sync-alt" style={{ fontSize: '12px' }}></i>
+                          </button>
+                          <button
+                            className="btn btn-info btn-round"
+                            onClick={() => copyQrCode(qr.id)}
+                            title="复制二维码"
+                          >
+                            <i className="fas fa-copy" style={{ fontSize: '12px' }}></i>
+                          </button>
+                          <button
+                            className="btn btn-primary btn-round"
+                            onClick={() => downloadQrCode(qr.id)}
+                            title="下载二维码"
+                          >
+                            <i className="fas fa-download" style={{ fontSize: '12px' }}></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="content-area">
-              {filteredQrCodes.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">
-                    <i className="fas fa-search"></i>
-                  </div>
-                  <h3 className="empty-title">
-                    {searchTerm ? "未找到匹配的配置" : "暂无配置"}
-                  </h3>
-                  <p>
-                    {searchTerm ? "请尝试其他搜索关键词" : "点击“+”添加新的二维码配置"}
-                  </p>
-                </div>
-              ) : (
-                filteredQrCodes.map((qr) => {
-                  const isCollapsed = collapsedCards.has(qr.id);
-                  return (
-                    <div
-                      key={qr.id}
-                      className={`card ${selectedId === qr.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedId(qr.id)}
-                    >
-                      <div className="card-header">
-                        <div className="card-title">
-                          <div>{qr.name || "未命名配置"}</div>
-                          <div className="qr-time">
-                            <i className="fas fa-clock"></i>
-                            <span>{formatTime(qr.updatedAt)}更新</span>
-                          </div>
-                        </div>
-                        <div className="card-actions">
-                          <button
-                            className="btn btn-round"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // 复制链接而不是二维码图片
-                              navigator.clipboard.writeText(qr.url).then(() => {
-                                showNotification(`已复制链接: ${qr.name}`);
-                              }).catch(() => {
-                                showNotification("复制失败，请重试", "error");
-                              });
-                            }}
-                            title="复制链接"
-                          >
-                            <i className="fas fa-link"></i>
-                          </button>
-                          <button
-                            className="btn btn-round"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showDeleteConfirm(qr);
-                            }}
-                            title="删除"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
-                          <button
-                            className="btn btn-round"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleCardCollapse(qr.id);
-                            }}
-                            title={isCollapsed ? "展开配置" : "折叠配置"}
-                          >
-                            <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}`}></i>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className={`card-content ${isCollapsed ? 'collapsed' : 'expanded'}`}>
-                        <div>
-                          <div className="form-group">
-                            <label className="form-label">
-                              名称
-                            </label>
-                            <input
-                              type="text"
-                              className="form-input"
-                              value={qr.name}
-                              onChange={(e) => {
-                                updateQrCode(qr.id, { name: e.target.value });
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">
-                              内容
-                            </label>
-                            <textarea
-                              className="form-input form-textarea"
-                              value={qr.url}
-                              onChange={(e) => {
-                                updateQrCode(qr.id, { url: e.target.value });
-                                // 自动调整高度
-                                adjustTextareaHeight(e.target);
-                              }}
-                              onInput={(e) => {
-                                // 自动调整高度
-                                adjustTextareaHeight(e.target);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              placeholder="输入网址或文本内容"
-                              style={{ minHeight: '40px' }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* 右侧预览面板 */}
-          <div className="right-panel">
-            <div className="header">
-              <div className="header-content">
-                <h2 className="header-title">
-                  二维码预览
-                </h2>
-                <div className="header-actions">
-                  {viewMode === "all" && (
+            {/* 二维码放大查看模态框 */}
+            {enlargedQrCode && (
+              <div
+                className="modal"
+                onClick={closeQrCodeModal}
+              >
+                <div
+                  className="modal-content"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="modal-header">
+                    <h3 className="modal-title">
+                      {enlargedQrCode.name}
+                    </h3>
                     <button
-                      className="btn btn-icon"
-                      onClick={() => refreshQrCode()}
-                      title="刷新所有二维码"
+                      className="modal-close"
+                      onClick={closeQrCodeModal}
                     >
-                      <i className="fas fa-sync-alt"></i>
+                      <i className="fas fa-times" style={{ fontSize: '18px' }}></i>
                     </button>
-                  )}
-                  <button
-                    className="btn btn-icon"
-                    onClick={toggleTheme}
-                    title={isDarkMode ? "切换到浅色模式" : "切换到深色模式"}
-                  >
-                    <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
-                  </button>
-                  <button
-                    className="btn btn-view-mode"
-                    onClick={() =>
-                      setViewMode(viewMode === "single" ? "all" : "single")
-                    }
-                    title={viewMode === "single" ? "多码预览" : "单码预览"}
-                  >
-                    {viewMode === "single" ? "多码预览" : "单码预览"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="preview-container">
-              {qrCodes.length === 0 ? (
-                <div className="empty-state" style={{ height: '100%' }}>
-                  <div className="empty-icon">
-                    <i className="fas fa-qrcode"></i>
                   </div>
-                  <h3 className="empty-title">暂无二维码配置</h3>
-                  <p>
-                    请在左侧面板点击"+"按钮开始创建
-                  </p>
-                </div>
-              ) : viewMode === "single" && selectedQrCode ? (
-                <div className="preview-single">
+
                   <div className="flex justify-center mb-6">
                     <canvas
-                      id="main-qr-canvas"
-                      width="350"
-                      height="350"
+                      id="enlarged-qr-canvas"
+                      width="400"
+                      height="400"
                       className="qr-canvas"
-                      onClick={() => openQrCodeModal(selectedQrCode)}
-                      title="点击放大查看"
                     ></canvas>
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-semibold mb-2 break-all" style={{ color: 'var(--neutral-800)' }}>
-                      {selectedQrCode.name}
+
+                  <div className="text-center mb-6">
+                    <div className="url-display">
+                      {enlargedQrCode.url}
                     </div>
-                    <div className="qr-url mb-2">
-                      {selectedQrCode.url}
-                    </div>
-                    <div className="qr-time mb-6">
+                    <div className="qr-time">
                       <i className="fas fa-clock"></i>
-                      <span>更新于 {formatTime(selectedQrCode.updatedAt)}</span>
-                    </div>
-                    <div className="flex gap-3 justify-center">
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => refreshQrCode(selectedQrCode.id)}
-                        style={{ padding: '12px 24px', borderRadius: '50px' }}
-                      >
-                        <i className="fas fa-sync-alt"></i>
-                      </button>
-                      <button
-                        className="btn btn-info"
-                        onClick={() => copyQrCode(selectedQrCode.id)}
-                        style={{ padding: '12px 24px', borderRadius: '50px' }}
-                      >
-                        <i className="fas fa-copy"></i>
-                      </button>
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => downloadQrCode(selectedQrCode.id)}
-                        style={{ padding: '12px 24px', borderRadius: '50px' }}
-                      >
-                        <i className="fas fa-download"></i>
-                      </button>
+                      <span>{formatTime(enlargedQrCode.updatedAt)}更新</span>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="preview-grid">
-                  {qrCodes.map((qr) => (
-                    <div
-                      key={qr.id}
-                      className="preview-card"
+
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => refreshQrCode(enlargedQrCode.id)}
+                      style={{ padding: '12px 24px' }}
                     >
-                      <div className="flex justify-center" style={{ marginBottom: '16px' }}>
-                        <canvas
-                          id={`qr-canvas-${qr.id}`}
-                          width="250"
-                          height="250"
-                          className="qr-canvas"
-                          onClick={() => openQrCodeModal(qr)}
-                          title="点击放大查看"
-                        ></canvas>
-                      </div>
-                      <div className="qr-name">
-                        {qr.name}
-                      </div>
-                      <div className="qr-time">
-                        <i className="fas fa-clock"></i>
-                        <span>{formatTime(qr.updatedAt)}</span>
-                      </div>
-                      <div className="qr-actions">
-                        <button
-                          className="btn btn-secondary btn-round"
-                          onClick={() => refreshQrCode(qr.id)}
-                          title="刷新二维码"
-                        >
-                          <i className="fas fa-sync-alt" style={{ fontSize: '12px' }}></i>
-                        </button>
-                        <button
-                          className="btn btn-info btn-round"
-                          onClick={() => copyQrCode(qr.id)}
-                          title="复制二维码"
-                        >
-                          <i className="fas fa-copy" style={{ fontSize: '12px' }}></i>
-                        </button>
-                        <button
-                          className="btn btn-primary btn-round"
-                          onClick={() => downloadQrCode(qr.id)}
-                          title="下载二维码"
-                        >
-                          <i className="fas fa-download" style={{ fontSize: '12px' }}></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                      <i className="fas fa-sync-alt"></i> 刷新二维码
+                    </button>
+                    <button
+                      className="btn btn-info"
+                      onClick={() => copyQrCode(enlargedQrCode.id)}
+                      style={{ padding: '12px 24px' }}
+                    >
+                      <i className="fas fa-copy"></i> 复制二维码
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => downloadQrCode(enlargedQrCode.id)}
+                      style={{ padding: '12px 24px' }}
+                    >
+                      <i className="fas fa-download"></i> 下载二维码
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* 二维码放大查看模态框 */}
-          {enlargedQrCode && (
-            <div
-              className="modal"
-              onClick={closeQrCodeModal}
-            >
+            {/* 删除确认弹窗 */}
+            {deleteConfirm.show && (
+              <div className="delete-confirm-overlay" onClick={cancelDelete}>
+                <div className="delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="delete-confirm-title">
+                    <i className="fas fa-exclamation-triangle"></i> 确认删除
+                  </div>
+                  <div className="delete-confirm-message">
+                    确定要删除配置
+                    <span className="delete-confirm-qr-name">{deleteConfirm.qrCode?.name}</span>
+                    吗？此操作无法撤销。
+                  </div>
+                  <div className="delete-confirm-actions">
+                    <button className="delete-confirm-btn cancel" onClick={cancelDelete}>
+                      取消
+                    </button>
+                    <button className="delete-confirm-btn confirm" onClick={confirmDelete}>
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 通知组件 */}
+            {notification.show && (
               <div
-                className="modal-content"
-                onClick={(e) => e.stopPropagation()}
+                className={`notification ${notification.type}`}
               >
-                <div className="modal-header">
-                  <h3 className="modal-title">
-                    {enlargedQrCode.name}
-                  </h3>
-                  <button
-                    className="modal-close"
-                    onClick={closeQrCodeModal}
-                  >
-                    <i className="fas fa-times" style={{ fontSize: '18px' }}></i>
-                  </button>
-                </div>
-
-                <div className="flex justify-center mb-6">
-                  <canvas
-                    id="enlarged-qr-canvas"
-                    width="400"
-                    height="400"
-                    className="qr-canvas"
-                  ></canvas>
-                </div>
-
-                <div className="text-center mb-6">
-                  <div className="url-display">
-                    {enlargedQrCode.url}
-                  </div>
-                  <div className="qr-time">
-                    <i className="fas fa-clock"></i>
-                    <span>{formatTime(enlargedQrCode.updatedAt)}更新</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 justify-center">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => refreshQrCode(enlargedQrCode.id)}
-                    style={{ padding: '12px 24px' }}
-                  >
-                    <i className="fas fa-sync-alt"></i> 刷新二维码
-                  </button>
-                  <button
-                    className="btn btn-info"
-                    onClick={() => copyQrCode(enlargedQrCode.id)}
-                    style={{ padding: '12px 24px' }}
-                  >
-                    <i className="fas fa-copy"></i> 复制二维码
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => downloadQrCode(enlargedQrCode.id)}
-                    style={{ padding: '12px 24px' }}
-                  >
-                    <i className="fas fa-download"></i> 下载二维码
-                  </button>
-                </div>
+                <i
+                  className={
+                    notification.type === "success"
+                      ? "fas fa-check-circle"
+                      : notification.type === "error"
+                        ? "fas fa-exclamation-circle"
+                        : "fas fa-info-circle"
+                  }
+                ></i>
+                <span>{notification.message}</span>
               </div>
-            </div>
-          )}
-
-          {/* 删除确认弹窗 */}
-          {deleteConfirm.show && (
-            <div className="delete-confirm-overlay" onClick={cancelDelete}>
-              <div className="delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="delete-confirm-title">
-                  <i className="fas fa-exclamation-triangle"></i> 确认删除
-                </div>
-                <div className="delete-confirm-message">
-                  确定要删除配置
-                  <span className="delete-confirm-qr-name">{deleteConfirm.qrCode?.name}</span>
-                  吗？此操作无法撤销。
-                </div>
-                <div className="delete-confirm-actions">
-                  <button className="delete-confirm-btn cancel" onClick={cancelDelete}>
-                    取消
-                  </button>
-                  <button className="delete-confirm-btn confirm" onClick={confirmDelete}>
-                    删除
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 通知组件 */}
-          {notification.show && (
-            <div
-              className={`notification ${notification.type}`}
-            >
-              <i
-                className={
-                  notification.type === "success"
-                    ? "fas fa-check-circle"
-                    : notification.type === "error"
-                      ? "fas fa-exclamation-circle"
-                      : "fas fa-info-circle"
-                }
-              ></i>
-              <span>{notification.message}</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       );
     };
