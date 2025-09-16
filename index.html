@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" href="favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>批量二维码生成器</title>
+  <title>哈哈二维码｜批量二维码生成器</title>
   <!-- 引入React和ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -643,10 +643,21 @@
       padding: 20px;
       text-align: center;
       transition: all 0.2s;
+      cursor: pointer;
+      border: 1px solid transparent;
     }
 
     .dark .preview-card {
       background-color: var(--neutral-800);
+    }
+
+    .preview-card.selected {
+      border-color: var(--primary);
+      background-color: rgba(79, 70, 229, 0.05);
+    }
+
+    .dark .preview-card.selected {
+      background-color: rgba(79, 70, 229, 0.1);
     }
 
     .qr-canvas {
@@ -1769,7 +1780,8 @@
                     {qrCodes.map((qr) => (
                       <div
                         key={qr.id}
-                        className="preview-card"
+                        className={`preview-card ${selectedId === qr.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedId(qr.id)}
                       >
                         <div className="flex justify-center" style={{ marginBottom: '16px' }}>
                           <canvas
@@ -1777,7 +1789,10 @@
                             width="250"
                             height="250"
                             className="qr-canvas"
-                            onClick={() => openQrCodeModal(qr)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openQrCodeModal(qr);
+                            }}
                             title="点击放大查看"
                           ></canvas>
                         </div>
@@ -1791,21 +1806,30 @@
                         <div className="qr-actions">
                           <button
                             className="btn btn-secondary btn-round"
-                            onClick={() => refreshQrCode(qr.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              refreshQrCode(qr.id);
+                            }}
                             title="刷新二维码"
                           >
                             <i className="fas fa-sync-alt" style={{ fontSize: '12px' }}></i>
                           </button>
                           <button
                             className="btn btn-info btn-round"
-                            onClick={() => copyQrCode(qr.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyQrCode(qr.id);
+                            }}
                             title="复制二维码"
                           >
                             <i className="fas fa-copy" style={{ fontSize: '12px' }}></i>
                           </button>
                           <button
                             className="btn btn-primary btn-round"
-                            onClick={() => downloadQrCode(qr.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              downloadQrCode(qr.id);
+                            }}
                             title="下载二维码"
                           >
                             <i className="fas fa-download" style={{ fontSize: '12px' }}></i>
